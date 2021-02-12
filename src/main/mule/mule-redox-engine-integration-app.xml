@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:redox="http://www.mulesoft.org/schema/mule/redox"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/redox http://www.mulesoft.org/schema/mule/redox/current/mule-redox.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<redox:config name="Redox_Config" doc:name="Redox Config" doc:id="f17ef7f7-0a9a-4059-a6c8-f618f7d7a5ea" >
+		<redox:oauth-connection apiKey="${redox.apiKey}" secret="${redox.secret}" />
+	</redox:config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="e56c02f0-c6ce-4cb5-bdb3-2ad0d403bfc2" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="a9461343-9635-4f0a-9bed-541ad3cc9806" file="config.yaml" />
+	<flow name="mule-redox-engine-integration-appFlow" doc:id="e2e44590-d70a-4078-a400-f4fb23e5f28b" >
+		<http:listener doc:name="8081/patient" doc:id="c197a1b6-e4c7-48d7-9a5e-ffe6a3f1e90c" path="/patient" config-ref="HTTP_Listener_config"/>
+		<set-variable value="#[payload]" doc:name="Set FV vRedoxInput" doc:id="97f392eb-5fb3-47bc-95bc-ef0d92908c8e" variableName="vRedoxInput"/>
+		<redox:endpoint type="PatientAdmin(Arrival)" doc:name="New Patient Registration [PatientAdmin(Arrival)]" doc:id="8b7fafa0-9f53-4e43-9299-83b2338359de" config-ref="Redox_Config">
+			<redox:content ><![CDATA[#[vars.vRedoxInput.NewPatient]]]></redox:content>
+		</redox:endpoint>
+		<logger level="INFO" doc:name="[INFO]New patient has been registered" doc:id="27e48ffb-3d60-41f5-a20d-34ba3798fec9" message="New patient has been registered"/>
+		<redox:endpoint doc:name="Add patients new observations to Flowsheet Flowsheet(New)" doc:id="57037e3b-a014-4e83-80bb-6219858c7b51" config-ref="Redox_Config" type="Flowsheet(New)">
+			<redox:content ><![CDATA[#[vars.vRedoxInput.Flowsheet]]]></redox:content>
+		</redox:endpoint>
+		<logger level="INFO" doc:name="[INFO]Patients labs result completed" doc:id="2a7d82df-d8cf-4857-b633-251326cb97ad" message="Patients labs result completed"/>
+		<redox:endpoint doc:name="PatientAdmin(Discharge)" doc:id="6f9a9653-9bcd-4c0d-9a7d-24390c933690" config-ref="Redox_Config" type="PatientAdmin(Discharge)">
+			<redox:content ><![CDATA[#[vars.vRedoxInput.PatientDischarge]]]></redox:content>
+		</redox:endpoint>
+		<logger level="INFO" doc:name="[INFO]Patient is discharged from Hospital" doc:id="63cdc939-9189-41e2-9057-491a56bc22e0" message="Patient is discharged from Hospital"/>
+	</flow>
+</mule>
